@@ -1,7 +1,7 @@
 from collections import Counter
 from typing import List, Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 import ftfy
 
 from marker.bbox import boxes_intersect_pct, multiple_boxes_intersect
@@ -21,7 +21,6 @@ class BboxElement(BaseModel):
     bbox: List[float]
 
 
-    @field_validator('bbox')
     @classmethod
     def check_4_elements(cls, v: List[float]) -> List[float]:
         if len(v) != 4:
@@ -64,7 +63,6 @@ class Span(BboxElement):
     selected: bool = True
 
 
-    @field_validator('text')
     @classmethod
     def fix_unicode(cls, text: str) -> str:
         return ftfy.fix_text(text)

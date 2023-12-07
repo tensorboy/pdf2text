@@ -15,10 +15,12 @@ os.environ["TESSDATA_PREFIX"] = settings.TESSDATA_PREFIX
 def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optional[SpellChecker] = None, ocr=False) -> Tuple[List[Block], int]:
     page = doc[pnum]
     if ocr:
+        print("Scanning page using OCR...")
         blocks = ocr_entire_page(page, tess_lang, spellchecker)
     else:
         blocks = page.get_text("dict", sort=True, flags=settings.TEXT_FLAGS)["blocks"]
 
+    print("Extracting from", len(blocks), "blocks")
     page_blocks = []
     span_id = 0
     for block_idx, block in enumerate(blocks):
@@ -53,7 +55,11 @@ def get_single_page_blocks(doc, pnum: int, tess_lang: str, spellchecker: Optiona
         )
         # Only select blocks with multiple lines
         if len(block_lines) > 0:
+            print("Extracted block", block_idx, "with", len(block_lines), "lines")
             page_blocks.append(block_obj)
+        else:
+            print("Skipping block", block_idx, "with no positive bboxes out of", len(block["lines"]), "lines")
+    print("Extracted", len(page_blocks), "blocks")
     return page_blocks
 
 
@@ -62,23 +68,26 @@ def convert_single_page(doc, pnum, tess_lang: str, spell_lang: Optional[str], no
     ocr_success = 0
     ocr_failed = 0
     spellchecker = None
-    page_bbox = doc[pnum].bound()
+    page_bbox = list(doc[pnum].bound())
     if spell_lang:
         spellchecker = SpellChecker(language=spell_lang)
 
     blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker)
-    page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
+    if len(blocks) == 0:
+        conditions = [True]
+    else:
+        page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)
 
-    # OCR page if we got minimal text, or if we got too many spaces
-    conditions = [
-        (
-            no_text  # Full doc has no text, and needs full OCR
-            or
-            (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text, spellchecker))  # Bad OCR
-        ),
-        min_ocr_page < pnum < len(doc) - 1,
-        not disable_ocr
-    ]
+        # OCR page if we got minimal text, or if we got too many spaces
+        conditions = [
+            (
+                no_text  # Full doc has no text, and needs full OCR
+                or
+                (len(page_obj.prelim_text) > 0 and detect_bad_ocr(page_obj.prelim_text, spellchecker))  # Bad OCR
+            ),
+            min_ocr_page < pnum < len(doc) - 1,
+            not disable_ocr
+        ]
     if all(conditions) or settings.OCR_ALL_PAGES:
         blocks = get_single_page_blocks(doc, pnum, tess_lang, spellchecker, ocr=True)
         page_obj = Page(blocks=blocks, pnum=pnum, bbox=page_bbox)

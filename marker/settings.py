@@ -2,8 +2,7 @@ import os
 from typing import Optional, List, Dict
 
 from dotenv import find_dotenv
-from pydantic import computed_field
-from pydantic_settings import BaseSettings
+from pydantic import BaseSettings
 import fitz as pymupdf
 import torch
 
@@ -88,12 +87,10 @@ class Settings(BaseSettings):
     DEBUG: bool = False # Enable debug logging
     DEBUG_DATA_FOLDER: Optional[str] = None
 
-    @computed_field
     @property
     def CUDA(self) -> bool:
         return "cuda" in self.TORCH_DEVICE
 
-    @computed_field
     @property
     def MODEL_DTYPE(self) -> torch.dtype:
         return torch.bfloat16 if self.CUDA else torch.float32
