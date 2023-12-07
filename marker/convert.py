@@ -75,7 +75,6 @@ def convert_single_pdf(
 
     # Output metadata
     out_meta = {"language": lang}
-
     filetype = find_filetype(fname)
     if filetype == "other":
         return "", out_meta
