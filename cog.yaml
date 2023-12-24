@@ -1,5 +1,6 @@
 build:
-  gpu: false
+  cuda: "12.1"
+  gpu: true
   python_version: "3.11"
   system_packages:
     - git
